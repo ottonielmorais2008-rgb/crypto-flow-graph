@@ -98,6 +98,8 @@ export function GraphView({ graph, selected, onSelectNode, onSelectEdge }: Graph
       .linkDirectionalParticles(2)
       .linkDirectionalParticleWidth(1.4)
       .linkDirectionalParticleSpeed(0.004)
+      .d3VelocityDecay(0.3)
+      .cooldownTicks(80)
       .nodeCanvasObject((node, ctx, globalScale) => {
         paintNode(node, ctx, globalScale, callbacks.current.selected);
       })
@@ -109,14 +111,21 @@ export function GraphView({ graph, selected, onSelectNode, onSelectEdge }: Graph
       });
 
     graphRef.current = graphApi;
+    host.style.width = "100%";
+    host.style.height = "100%";
 
     const resize = () => {
       const rect = host.getBoundingClientRect();
-      graphApi.width(rect.width).height(rect.height);
+      const width = Math.max(1, Math.round(rect.width));
+      const height = Math.max(1, Math.round(rect.height));
+      graphApi.width(width).height(height);
     };
     resize();
+    requestAnimationFrame(resize);
     const observer = new ResizeObserver(resize);
     observer.observe(host);
+    const parent = host.parentElement;
+    if (parent) observer.observe(parent);
 
     return () => {
       observer.disconnect();
@@ -141,6 +150,27 @@ export function GraphView({ graph, selected, onSelectNode, onSelectEdge }: Graph
       label: formatAmount(edge.amount, graph.chain),
     }));
     api.graphData({ nodes, links });
+    const charge = api.d3Force("charge");
+    if (charge && typeof charge.strength === "function") {
+      charge.strength(-260);
+    }
+    const link = api.d3Force("link");
+    if (link && typeof link.distance === "function") {
+      link.distance(90);
+    }
+    const fit = () => {
+      const host = hostRef.current;
+      if (host) {
+        const rect = host.getBoundingClientRect();
+        api.width(Math.max(1, Math.round(rect.width))).height(Math.max(1, Math.round(rect.height)));
+      }
+      if (api.graphData().nodes.length > 0) {
+        api.zoomToFit(300, 80);
+      }
+    };
+    api.onEngineStop(fit);
+    const timers = [200, 600, 1200, 2000].map((ms) => setTimeout(fit, ms));
+    return () => timers.forEach((timer) => clearTimeout(timer));
   }, [graph]);
 
   useEffect(() => {

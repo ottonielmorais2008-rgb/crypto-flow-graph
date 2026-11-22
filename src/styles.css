@@ -308,7 +308,8 @@ h3 { font-size: 15px; margin-bottom: 8px; }
 
 .muted { color: var(--muted); font-size: 14px; line-height: 1.5; }
 
-.explain-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 8px; }
+.explain-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+.explain-head h2 { font-size: 18px; }
 .explanation {
   margin: 16px 0 0;
   padding: 16px;
